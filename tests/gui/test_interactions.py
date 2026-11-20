@@ -1,9 +1,15 @@
-"""GUI-тесты интерактива: клики по вкладкам (таб-бар)."""
+"""GUI-тесты интерактива: клики по вкладкам (таб-бар), заглушка кодов."""
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QTabWidget
 
 from diagninten98.app import MainWindow
+
+
+def _window(qtbot):
+    win = MainWindow(usb_enumerate_fn=lambda: [])
+    qtbot.addWidget(win)
+    return win
 
 
 def _tabs(win: MainWindow) -> QTabWidget:
@@ -13,8 +19,7 @@ def _tabs(win: MainWindow) -> QTabWidget:
 
 
 def test_tab_click_switches_page(qtbot):
-    win = MainWindow()
-    qtbot.addWidget(win)
+    win = _window(qtbot)
     win.show()
     tabs = _tabs(win)
     bar = tabs.tabBar()
@@ -23,10 +28,10 @@ def test_tab_click_switches_page(qtbot):
         assert tabs.currentIndex() == target
 
 
-def test_placeholder_label_present(qtbot):
-    win = MainWindow()
-    qtbot.addWidget(win)
+def test_codes_tab_stub_label(qtbot):
+    """Вкладка «Коды ошибок» — заглушка до фазы 3, с непустым текстом."""
+    win = _window(qtbot)
     tabs = _tabs(win)
-    label = tabs.widget(0).findChild(QLabel)
+    label = tabs.widget(3).findChild(QLabel, "codes_tab_stub")
     assert label is not None
-    assert label.text()  # заглушка с непустым текстом
+    assert label.text()

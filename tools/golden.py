@@ -19,15 +19,17 @@ GOLDEN_DIR = ROOT / "tests" / "golden"
 
 from PySide6.QtWidgets import QApplication, QComboBox  # noqa: E402
 
-from diagninten98.app import LANGS, MainWindow  # noqa: E402
+from diagninten98.app import MainWindow  # noqa: E402
 from diagninten98.capture import capture_tabs  # noqa: E402
+from diagninten98.demo import demo_enumerate  # noqa: E402
 from diagninten98.fonts import register_offscreen_fonts  # noqa: E402
+from diagninten98.strings import LANGS  # noqa: E402
 
 
 def main() -> int:
     app = QApplication(sys.argv)
     register_offscreen_fonts()  # CJK в offscreen без этого рендерится квадратами
-    win = MainWindow()
+    win = MainWindow(usb_enumerate_fn=demo_enumerate, usb_poll_ms=0)
     win.resize(960, 640)
     win.show()
     combo = win.findChild(QComboBox)

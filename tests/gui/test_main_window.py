@@ -4,7 +4,11 @@ import pytest
 from PySide6.QtWidgets import QComboBox, QTabWidget
 
 from diagninten98 import app as app_module
-from diagninten98.app import LANGS, STRINGS, TABS, MainWindow
+from diagninten98 import strings as strings_module
+from diagninten98.app import MainWindow
+from diagninten98.strings import LANGS, STRINGS as _S
+
+TAB_KEYS = ["usb_tab", "rcm_tab", "faults_tab", "codes_tab", "report_tab"]
 
 
 class _FakeSettings:
@@ -23,7 +27,13 @@ class _FakeSettings:
 @pytest.fixture(autouse=True)
 def _isolated_env(monkeypatch):
     monkeypatch.setattr(app_module, "QSettings", _FakeSettings)
-    monkeypatch.setattr(app_module, "LANG", "ru")
+    monkeypatch.setattr(strings_module, "LANG", "ru")
+
+
+def _window(qtbot):
+    win = MainWindow(usb_enumerate_fn=lambda: [])
+    qtbot.addWidget(win)
+    return win
 
 
 def _titles(win: MainWindow) -> list[str]:
@@ -33,22 +43,19 @@ def _titles(win: MainWindow) -> list[str]:
 
 
 def test_window_title(qtbot):
-    win = MainWindow()
-    qtbot.addWidget(win)
+    win = _window(qtbot)
     assert "DIAGNINTEN98" in win.windowTitle()
     assert win.windowTitle().count("0.") > 0  # версия в заголовке
 
 
 def test_five_tabs_with_expected_titles(qtbot):
-    win = MainWindow()
-    qtbot.addWidget(win)
-    expected = [STRINGS[key][0] for key, _stub in TABS]  # ru по умолчанию
+    win = _window(qtbot)
+    expected = [_S[key][0] for key in TAB_KEYS]  # ru по умолчанию
     assert _titles(win) == expected
 
 
 def test_language_combo_present(qtbot):
-    win = MainWindow()
-    qtbot.addWidget(win)
+    win = _window(qtbot)
     combo = win.findChild(QComboBox)
     assert combo is not None
     assert combo.count() == len(LANGS)
@@ -58,20 +65,18 @@ def test_language_combo_present(qtbot):
 
 
 def test_switch_to_zh_updates_tabs(qtbot):
-    win = MainWindow()
-    qtbot.addWidget(win)
+    win = _window(qtbot)
     combo = win.findChild(QComboBox)
     combo.setCurrentIndex(LANGS.index("zh"))
-    assert app_module.LANG == "zh"
-    expected = [STRINGS[key][2] for key, _stub in TABS]
+    assert strings_module.LANG == "zh"
+    expected = [_S[key][2] for key in TAB_KEYS]
     assert _titles(win) == expected
 
 
 def test_switch_to_en_updates_tabs(qtbot):
-    win = MainWindow()
-    qtbot.addWidget(win)
+    win = _window(qtbot)
     combo = win.findChild(QComboBox)
     combo.setCurrentIndex(LANGS.index("en"))
-    assert app_module.LANG == "en"
-    expected = [STRINGS[key][1] for key, _stub in TABS]
+    assert strings_module.LANG == "en"
+    expected = [_S[key][1] for key in TAB_KEYS]
     assert _titles(win) == expected

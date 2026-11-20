@@ -16,7 +16,17 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 if sys.platform == "win32" and os.path.isdir(r"C:\Windows\Fonts"):
     os.environ.setdefault("QT_QPA_FONTDIR", r"C:\Windows\Fonts")
 
-import pytest  # noqa: E402
+import pytest
+
+from diagninten98 import strings
+
+
+@pytest.fixture(autouse=True)
+def _reset_language():
+    """Каждый тест начинается и заканчивается на ru — без утечек языка."""
+    strings.set_language("ru")
+    yield
+    strings.set_language("ru")
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -1,15 +1,16 @@
 """Компонентные тесты словаря локализации (ru/en/zh) и tr()."""
 
-from diagninten98 import app
-from diagninten98.app import LANGS
+from diagninten98 import strings
+from diagninten98.strings import LANGS
 
-# Ключи, где переводы закономерно совпадают во всех языках (аббревиатуры).
-SAME_IN_ALL = {"rcm_tab"}
+# Ключи, где переводы закономерно совпадают во всех языках
+# (аббревиатуры и технические обозначения).
+SAME_IN_ALL = {"rcm_tab", "mon_vidpid", "mon_kind_rcm", "mon_kind_other", "rep_sec_rcm"}
 
 
 def test_strings_cover_all_languages():
     """Каждый ключ — кортеж непустых строк по числу языков."""
-    for key, value in app.STRINGS.items():
+    for key, value in strings.STRINGS.items():
         assert isinstance(value, tuple), key
         assert len(value) == len(LANGS), key
         for text in value:
@@ -18,7 +19,7 @@ def test_strings_cover_all_languages():
 
 def test_strings_differ_across_languages():
     """Не-аббревиатуры должны различаться между языками."""
-    for key, value in app.STRINGS.items():
+    for key, value in strings.STRINGS.items():
         if key in SAME_IN_ALL:
             continue
         assert len(set(value)) > 1, f"все переводы совпадают для {key}"
@@ -26,6 +27,25 @@ def test_strings_differ_across_languages():
 
 def test_tr_for_each_language(monkeypatch):
     for i, lang in enumerate(LANGS):
-        monkeypatch.setattr(app, "LANG", lang)
-        for key in app.STRINGS:
-            assert app.tr(key) == app.STRINGS[key][i]
+        monkeypatch.setattr(strings, "LANG", lang)
+        for key in strings.STRINGS:
+            assert strings.tr(key) == strings.STRINGS[key][i]
+
+
+def test_set_language_and_reject_unknown():
+    strings.set_language("zh")
+    try:
+        assert strings.LANG == "zh"
+    finally:
+        strings.set_language("ru")
+    try:
+        strings.set_language("xx")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("unknown language must raise ValueError")
+
+
+def test_tr_fmt_substitution(monkeypatch):
+    monkeypatch.setattr(strings, "LANG", "ru")
+    assert "boom" in strings.tr_fmt("mon_enum_error", err="boom")
