@@ -65,7 +65,7 @@ def test_monitor_mtp_and_other_rows(qtbot):
 
 def test_rcm_read_ok(qtbot):
     payload = bytes(range(16))
-    tab = RcmTab(read_fn=lambda: payload)
+    tab = RcmTab(read_fn=lambda: payload, enumerate_fn=lambda: [], driver_poll_ms=0)
     qtbot.addWidget(tab)
     tab._read_btn.click()
     assert tab._id_value.text() == payload.hex()
@@ -77,7 +77,9 @@ def test_rcm_read_fail(qtbot):
     def boom():
         raise RcmError("no device")
 
-    tab = RcmTab(read_fn=boom)
+    tab = RcmTab(
+        read_fn=boom, enumerate_fn=lambda: [], driver_poll_ms=0
+    )
     qtbot.addWidget(tab)
     tab._read_btn.click()
     assert tab._id_status.text() == tr("rcm_read_fail")
@@ -86,12 +88,84 @@ def test_rcm_read_fail(qtbot):
 
 
 def test_rcm_serial_check(qtbot):
-    tab = RcmTab()
+    tab = RcmTab(enumerate_fn=lambda: [], driver_poll_ms=0)
     qtbot.addWidget(tab)
     tab._serial_edit.setText("XAW10001234567")
     tab._serial_btn.click()
     assert "erista" in tab._serial_result_label.text()
     assert tab.snapshot()["serial"] == "XAW10001234567"
+
+
+# --- драйвер APX ---
+
+
+def test_rcm_driver_hint_no_apx(qtbot):
+    tab = RcmTab(enumerate_fn=lambda: [], driver_poll_ms=0)
+    qtbot.addWidget(tab)
+    assert tab._driver_label.text() == tr("rcm_driver_absent")
+
+
+def test_rcm_driver_hint_winusb_ok(qtbot):
+    devices = [UsbDeviceInfo(0x0955, 0x7321, "i", "APX", service="WinUSB")]
+    tab = RcmTab(enumerate_fn=lambda: devices, driver_poll_ms=0)
+    qtbot.addWidget(tab)
+    assert tab._driver_label.text() == tr("rcm_driver_ok")
+
+
+def test_rcm_driver_hint_missing(qtbot):
+    devices = [UsbDeviceInfo(0x0955, 0x7321, "i", "APX", service="")]
+    tab = RcmTab(enumerate_fn=lambda: devices, driver_poll_ms=0)
+    qtbot.addWidget(tab)
+    text = tab._driver_label.text()
+    assert "Zadig" in text and "WinUSB" in text
+
+
+# --- payload ---
+
+
+def test_rcm_payload_send_success(qtbot, tmp_path):
+    payload_file = tmp_path / "payload.bin"
+    payload_file.write_bytes(b"\x00" * 16)
+    sent = {}
+
+    def fake_send(path):
+        sent["path"] = path
+        return True
+
+    tab = RcmTab(
+        enumerate_fn=lambda: [],
+        driver_poll_ms=0,
+        send_fn=fake_send,
+        confirm_fn=lambda text: True,
+    )
+    qtbot.addWidget(tab)
+    tab._payload_path.setText(str(payload_file))
+    tab._send_btn.click()
+    assert sent["path"] == str(payload_file)
+    assert tab._payload_status_label.text() == tr("rcm_payload_sent")
+    assert tab.snapshot()["payload_status"] == tr("rcm_payload_sent")
+
+
+def test_rcm_payload_send_declined(qtbot, tmp_path):
+    payload_file = tmp_path / "p.bin"
+    payload_file.write_bytes(b"x")
+    tab = RcmTab(
+        enumerate_fn=lambda: [],
+        driver_poll_ms=0,
+        send_fn=lambda p: True,
+        confirm_fn=lambda text: False,
+    )
+    qtbot.addWidget(tab)
+    tab._payload_path.setText(str(payload_file))
+    tab._send_btn.click()
+    assert tab._payload_status_label.text() == ""  # подтверждения не было — тишина
+
+
+def test_rcm_payload_no_file(qtbot):
+    tab = RcmTab(enumerate_fn=lambda: [], driver_poll_ms=0, confirm_fn=lambda t: True)
+    qtbot.addWidget(tab)
+    tab._send_btn.click()
+    assert tab._payload_status_label.text() == tr("rcm_payload_no_file")
 
 
 # --- Поломки ---

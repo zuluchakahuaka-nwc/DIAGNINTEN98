@@ -15,3 +15,5 @@
 | 8 | Что именно отдает hekate по eMMC health / батарее / фьюзам | парсер фазы 2 | исходники hekate (nyx) |
 | 9 | Таблицы серийников «patched/unpatched» (XAW/GAW/...); префикс Европы и mariko-префиксы в knowledge/serials.py — черновик | определение ревизии | публичные базы (dgql и др.) |
 | 10 | SetupDiGetClassDevs с энумератором «USB» на части сборок Windows даёт ERROR_INVALID_PARAMETER → используем cfgmgr32 CM_Get_Device_ID_ListW | перечисление USB | наблюдено на машине разработки |
+| 11 | ✅ Intermezzo (стадия-1 fusée gelée): ARM32; загружается на 0x4001F000, самокопия хвоста на 0x40000000, копирование payload 0x20000 байт с 0x40020000 на 0x40010000 — константы подтверждены Makefile/линкером fusee-launcher. Своя реализация + capstone-верификация | tools/build_intermezzo.py | проверено |
+| 12 | Образ RCM: первые 680 байт — заголовок команды (в IRAM не копируются); далее смещение = 680 + (адрес − 0x40010000); указатели смэша занимают [680, 680+0xF000) | build_image | сверено с fusee-launcher |

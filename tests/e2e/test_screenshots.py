@@ -21,7 +21,12 @@ ARTIFACTS = ROOT / "artifacts" / "screenshots"
 @pytest.mark.e2e
 def test_capture_all_tabs_all_languages(qtbot):
     # Демо-набор (RCM + хаб + мышь): скриншоты детерминированы на любой машине.
-    win = MainWindow(usb_enumerate_fn=demo_enumerate, usb_poll_ms=0)
+    win = MainWindow(
+        usb_enumerate_fn=demo_enumerate,
+        usb_poll_ms=0,
+        rcm_enumerate_fn=demo_enumerate,
+        rcm_driver_poll_ms=0,
+    )
     qtbot.addWidget(win)
     win.resize(960, 640)
     win.show()

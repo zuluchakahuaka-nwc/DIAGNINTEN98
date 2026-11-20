@@ -36,6 +36,8 @@ class MainWindow(QMainWindow):
         self,
         usb_enumerate_fn=None,
         usb_poll_ms: int = 2000,
+        rcm_enumerate_fn=None,
+        rcm_driver_poll_ms: int = 3000,
         report_dir: str = "reports",
     ) -> None:
         super().__init__()
@@ -60,7 +62,9 @@ class MainWindow(QMainWindow):
 
         # Вкладки.
         self.usb_tab = UsbMonitorTab(enumerate_fn=usb_enumerate_fn, poll_ms=usb_poll_ms)
-        self.rcm_tab = RcmTab()
+        self.rcm_tab = RcmTab(
+            enumerate_fn=rcm_enumerate_fn, driver_poll_ms=rcm_driver_poll_ms
+        )
         self.faults_tab = FaultsTab()
         self.codes_tab = self._make_stub_page("codes_tab", "phase3_stub")
         self.report_tab = ReportTab(default_dir=report_dir)

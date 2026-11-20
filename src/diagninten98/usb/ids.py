@@ -23,6 +23,7 @@ class UsbDeviceInfo:
     product_id: int
     instance_id: str = ""
     name: str = ""
+    service: str = ""  # драйвер (например, WinUSB) — пусто, если не установлен
 
 
 RCM_VID_PID = (0x0955, 0x7321)

@@ -29,7 +29,12 @@ from diagninten98.strings import LANGS  # noqa: E402
 def main() -> int:
     app = QApplication(sys.argv)
     register_offscreen_fonts()  # CJK в offscreen без этого рендерится квадратами
-    win = MainWindow(usb_enumerate_fn=demo_enumerate, usb_poll_ms=0)
+    win = MainWindow(
+        usb_enumerate_fn=demo_enumerate,
+        usb_poll_ms=0,
+        rcm_enumerate_fn=demo_enumerate,
+        rcm_driver_poll_ms=0,
+    )
     win.resize(960, 640)
     win.show()
     combo = win.findChild(QComboBox)

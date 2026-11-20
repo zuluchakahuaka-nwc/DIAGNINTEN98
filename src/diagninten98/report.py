@@ -64,6 +64,9 @@ def render_txt(report: dict) -> str:
         if serial:
             result = report["rcm"].get("serial_result")
             lines.append(f"  SN: {serial} — {result or tr('rep_none')}")
+        payload_status = report["rcm"].get("payload_status")
+        if payload_status:
+            lines.append(f"  Payload: {payload_status}")
 
         lines += ["", f"== {tr('rep_sec_faults')} =="]
         symptom = report["faults"].get("symptom")

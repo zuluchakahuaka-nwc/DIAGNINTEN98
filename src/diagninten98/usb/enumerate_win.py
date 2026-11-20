@@ -23,6 +23,7 @@ CM_GETIDLIST_FILTER_ENUMERATOR = 0x00000001
 CM_GETIDLIST_FILTER_PRESENT = 0x00000100
 CM_LOCATE_DEVNODE_NORMAL = 0x00000000
 CM_DRP_DEVICEDESC = 0x00000001
+CM_DRP_SERVICE = 0x00000005  # = SPDRP_SERVICE (0x4) + 1
 
 _VID_PID_RE = re.compile(r"VID_([0-9A-Fa-f]{4})&PID_([0-9A-Fa-f]{4})")
 
@@ -49,7 +50,7 @@ def _load_cfgmgr32():
     return cfg
 
 
-def _device_name(cfg, device_id: str) -> str:
+def _device_property(cfg, device_id: str, prop: int) -> str:
     devinst = wintypes.DWORD(0)
     if cfg.CM_Locate_DevNodeW(
         ctypes.byref(devinst), device_id, CM_LOCATE_DEVNODE_NORMAL
@@ -59,11 +60,15 @@ def _device_name(cfg, device_id: str) -> str:
     buflen = wintypes.ULONG(ctypes.sizeof(buf))
     reg_type = wintypes.ULONG(0)
     if cfg.CM_Get_DevNode_Registry_PropertyW(
-        devinst.value, CM_DRP_DEVICEDESC, ctypes.byref(reg_type),
+        devinst.value, prop, ctypes.byref(reg_type),
         ctypes.cast(buf, ctypes.c_void_p), ctypes.byref(buflen), 0,
     ) != 0:
         return ""
     return buf.value
+
+
+def _device_name(cfg, device_id: str) -> str:
+    return _device_property(cfg, device_id, CM_DRP_DEVICEDESC)
 
 
 def list_usb_devices() -> list[UsbDeviceInfo]:
@@ -96,6 +101,7 @@ def list_usb_devices() -> list[UsbDeviceInfo]:
                 product_id=int(match.group(2), 16),
                 instance_id=device_id,
                 name=_device_name(cfg, device_id),
+                service=_device_property(cfg, device_id, CM_DRP_SERVICE),
             )
         )
     return devices

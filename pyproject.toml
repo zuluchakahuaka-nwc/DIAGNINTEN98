@@ -1,6 +1,6 @@
 [project]
 name = "diagninten98"
-version = "0.2.0"
+version = "0.3.0"
 description = "Read-only Nintendo Switch (HAC-001) diagnostics for Windows"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -21,6 +21,7 @@ packages = ["src/diagninten98"]
 
 [dependency-groups]
 dev = [
+    "capstone>=5.0.9",
     "pytest>=8.3",
     "pytest-qt>=4.4",
 ]

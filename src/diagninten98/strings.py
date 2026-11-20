@@ -89,6 +89,79 @@ STRINGS: dict[str, tuple[str, str, str]] = {
         "Region and generation by prefix. Exact patched/unpatched check is phase 2.",
         "按前缀判断地区与世代。patched/unpatched 的精确检查在阶段 2。",
     ),
+    # --- драйвер APX (фаза 2) ---
+    "rcm_driver_title": (
+        "Драйвер APX (нужен для Device ID и payload)",
+        "APX driver (required for Device ID & payload)",
+        "APX 驱动（读取 Device ID 与发送 payload 必需）",
+    ),
+    "rcm_driver_ok": (
+        "Драйвер WinUSB подключён — связь с RCM доступна.",
+        "WinUSB driver bound — RCM communication is available.",
+        "WinUSB 驱动已绑定——可与 RCM 通信。",
+    ),
+    "rcm_driver_missing": (
+        "APX без драйвера: чтение Device ID и отправка payload не сработают. "
+        "Установите WinUSB через Zadig:",
+        "APX has no driver: Device ID read and payload send won't work. "
+        "Install WinUSB via Zadig:",
+        "APX 未装驱动：读取 Device ID 与发送 payload 无法工作。请用 Zadig 安装 WinUSB：",
+    ),
+    "rcm_zadig_steps": (
+        "1) zadig.akeo.ie → Options → List All Devices;  2) выбрать «APX»;  "
+        "3) драйвер WinUSB → Replace Driver",
+        "1) zadig.akeo.ie → Options → List All Devices;  2) select 'APX';  "
+        "3) driver WinUSB → Replace Driver",
+        "1) 打开 zadig.akeo.ie → Options → List All Devices；2) 选择“APX”；"
+        "3) 驱动选 WinUSB → Replace Driver",
+    ),
+    "rcm_driver_absent": (
+        "Консоль в RCM не видна. Подсказка появится, когда APX появится на шине USB.",
+        "No RCM console seen. The hint will appear once APX shows up on USB.",
+        "未发现 RCM 主机。APX 出现在 USB 总线后会显示提示。",
+    ),
+    # --- payload (фаза 2) ---
+    "rcm_payload_title": (
+        "Payload (RAM, без записи на eMMC)",
+        "Payload (RAM, no eMMC writes)",
+        "Payload（仅内存，不写 eMMC）",
+    ),
+    "rcm_payload_path_hint": (
+        "Путь к payload (.bin, например hekate)",
+        "Payload path (.bin, e.g. hekate)",
+        "payload 路径（.bin，如 hekate）",
+    ),
+    "rcm_payload_browse": ("Обзор…", "Browse…", "浏览…"),
+    "rcm_payload_send": ("Отправить payload", "Send payload", "发送 payload"),
+    "rcm_payload_confirm": (
+        "Запустить код на консоли? Payload исполняется только в RAM, на eMMC "
+        "ничего не пишется. Требуется незалоченная erista.",
+        "Run code on the console? The payload runs in RAM only, nothing is "
+        "written to eMMC. Unpatched erista required.",
+        "在主机上运行代码？payload 仅在内存中执行，不写入 eMMC。需要未修补的 erista 主机。",
+    ),
+    "rcm_payload_sent": (
+        "Payload запущен: RCM-устройство сорвалось (это норма). Дальнейшее — "
+        "на экране консоли.",
+        "Payload launched: the RCM device dropped (expected). Continue on the "
+        "console screen.",
+        "payload 已启动：RCM 设备断开（属正常）。后续操作在主机屏幕上进行。",
+    ),
+    "rcm_payload_not_smashed": (
+        "Консоль не приняла эксплойт (patched/mariko?) — образ не запущен.",
+        "The console did not accept the exploit (patched/mariko?) — not launched.",
+        "主机未接受漏洞利用（patched/mariko？）——镜像未启动。",
+    ),
+    "rcm_payload_no_file": (
+        "Сначала укажите файл payload.",
+        "Choose a payload file first.",
+        "请先选择 payload 文件。",
+    ),
+    "rcm_payload_error": (
+        "Ошибка отправки: {err}",
+        "Send error: {err}",
+        "发送出错：{err}",
+    ),
     # --- результаты проверки серийника ---
     "serial_region_us": ("регион: Америка", "region: Americas", "地区：美洲"),
     "serial_region_jp": ("регион: Япония", "region: Japan", "地区：日本"),

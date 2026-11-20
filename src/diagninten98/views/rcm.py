@@ -1,12 +1,17 @@
-"""Вкладка «RCM»: чтение Device ID (только чтение) + ревизия по серийнику."""
+"""Вкладка «RCM»: Device ID (чтение), драйвер APX, payload, серийник."""
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (
+    QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -14,8 +19,11 @@ from PySide6.QtWidgets import (
 
 from .. import strings
 from ..knowledge import serials
-from ..strings import tr
+from ..strings import tr, tr_fmt
+from ..usb import enumerate_win
+from ..usb import payload as payload_mod
 from ..usb import rcm as rcm_mod
+from ..usb.ids import RCM_VID_PID, UsbDeviceInfo
 
 
 class RcmTab(QWidget):
@@ -23,15 +31,27 @@ class RcmTab(QWidget):
         self,
         read_fn=None,
         serial_fn=None,
+        enumerate_fn=None,
+        send_fn=None,
+        confirm_fn=None,
+        driver_poll_ms: int = 3000,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("rcm_tab")
         self._read = read_fn or rcm_mod.read_device_id
         self._serial_check = serial_fn or serials.check
+        self._enumerate = enumerate_fn or enumerate_win.list_usb_devices
+        self._send = send_fn or payload_mod.launch_from_file
+        self._confirm = confirm_fn or (lambda text: QMessageBox.question(
+            self, tr("rcm_payload_title"), text,
+            QMessageBox.Yes | QMessageBox.No,
+        ) == QMessageBox.Yes)
+
         self._device_id: str | None = None
         self._read_error: str | None = None
         self._serial_result: str = ""
+        self._payload_status: str = ""
 
         # Device ID
         self._id_box = QGroupBox()
@@ -45,6 +65,34 @@ class RcmTab(QWidget):
         id_layout.addWidget(self._read_btn)
         id_layout.addWidget(self._id_value)
         id_layout.addWidget(self._id_status)
+
+        # Драйвер APX
+        self._driver_box = QGroupBox()
+        driver_layout = QVBoxLayout(self._driver_box)
+        self._driver_label = QLabel()
+        self._driver_label.setWordWrap(True)
+        driver_layout.addWidget(self._driver_label)
+
+        # Payload
+        self._payload_box = QGroupBox()
+        payload_layout = QVBoxLayout(self._payload_box)
+        self._payload_path = QLineEdit()
+        self._payload_path.setPlaceholderText(tr("rcm_payload_path_hint"))
+        self._browse_btn = QPushButton()
+        self._browse_btn.clicked.connect(self._on_browse)
+        self._send_btn = QPushButton()
+        self._send_btn.clicked.connect(self._on_send)
+        path_row = QHBoxLayout()
+        path_row.addWidget(self._payload_path, 1)
+        path_row.addWidget(self._browse_btn)
+        send_row = QHBoxLayout()
+        send_row.addWidget(self._send_btn)
+        send_row.addStretch(1)
+        self._payload_status_label = QLabel()
+        self._payload_status_label.setWordWrap(True)
+        payload_layout.addLayout(path_row)
+        payload_layout.addLayout(send_row)
+        payload_layout.addWidget(self._payload_status_label)
 
         # Серийник
         self._serial_box = QGroupBox()
@@ -64,10 +112,19 @@ class RcmTab(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addWidget(self._id_box)
+        layout.addWidget(self._driver_box)
+        layout.addWidget(self._payload_box)
         layout.addWidget(self._serial_box)
         layout.addStretch(1)
 
+        self._driver_timer = QTimer(self)
+        self._driver_timer.setInterval(max(int(driver_poll_ms), 0))
+        if driver_poll_ms and driver_poll_ms > 0:
+            self._driver_timer.timeout.connect(self._refresh_driver_hint)
+            self._driver_timer.start()
+
         self.retranslate()
+        self._refresh_driver_hint()
 
     # --- действия ---
 
@@ -83,10 +140,65 @@ class RcmTab(QWidget):
             self._id_status.setText(tr("rcm_read_fail"))
         self._id_value.setText(self._device_id or "—")
 
+    def _on_browse(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, tr("rcm_payload_title"), "", "Payload (*.bin);;All files (*)"
+        )
+        if path:
+            self._payload_path.setText(path)
+
+    def _on_send(self) -> None:
+        path = self._payload_path.text().strip()
+        if not path or not Path(path).is_file():
+            self._set_payload_status(tr("rcm_payload_no_file"))
+            return
+        if not self._confirm(tr("rcm_payload_confirm")):
+            return
+        try:
+            launched = self._send(path)
+        except Exception as exc:  # noqa: BLE001
+            self._set_payload_status(tr_fmt("rcm_payload_error", err=exc))
+            return
+        key = "rcm_payload_sent" if launched else "rcm_payload_not_smashed"
+        self._set_payload_status(tr(key))
+
+    def _set_payload_status(self, text: str) -> None:
+        self._payload_status = text
+        self._payload_status_label.setText(text)
+
     def _on_serial(self) -> None:
         info = self._serial_check(self._serial_edit.text())
         self._serial_result = info.describe()
         self._serial_result_label.setText(self._serial_result)
+
+    # --- драйвер ---
+
+    def _refresh_driver_hint(self) -> None:
+        try:
+            devices = list(self._enumerate())
+        except Exception:  # noqa: BLE001 — без перечисления просто тишина
+            return
+        self.update_driver_hint(devices)
+
+    def update_driver_hint(self, devices: list[UsbDeviceInfo]) -> None:
+        """Показать статус драйвера APX (по service-полю устройства)."""
+        apx = [
+            d
+            for d in devices
+            if (d.vendor_id, d.product_id) == RCM_VID_PID
+        ]
+        if not apx:
+            self._driver_label.setText(tr("rcm_driver_absent"))
+            return
+        service = (apx[0].service or "").lower()
+        if "winusb" in service:
+            self._driver_label.setText(tr("rcm_driver_ok"))
+            self._driver_label.setStyleSheet("color: green;")
+        else:
+            self._driver_label.setText(
+                tr("rcm_driver_missing") + "\n" + tr("rcm_zadig_steps")
+            )
+            self._driver_label.setStyleSheet("color: darkorange;")
 
     # --- данные ---
 
@@ -96,6 +208,8 @@ class RcmTab(QWidget):
             "read_error": self._read_error,
             "serial": self._serial_edit.text().strip().upper(),
             "serial_result": self._serial_result or None,
+            "payload_path": self._payload_path.text().strip() or None,
+            "payload_status": self._payload_status or None,
         }
 
     # --- отображение ---
@@ -103,5 +217,9 @@ class RcmTab(QWidget):
     def retranslate(self) -> None:
         self._id_box.setTitle(tr("rcm_id_title"))
         self._read_btn.setText(tr("rcm_read_btn"))
+        self._driver_box.setTitle(tr("rcm_driver_title"))
+        self._payload_box.setTitle(tr("rcm_payload_title"))
+        self._browse_btn.setText(tr("rcm_payload_browse"))
+        self._send_btn.setText(tr("rcm_payload_send"))
         self._serial_box.setTitle(tr("rcm_serial_title"))
         self._serial_btn.setText(tr("rcm_serial_btn"))
