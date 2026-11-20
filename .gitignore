@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Окружения
+.venv/
+venv/
+
+# uv
+uv.lock
+
+# IDE
+.idea/
+.vscode/
+
+# Payload-бинарники (фаза 2, добавляются отдельно)
+payloads/*.bin
+
+# Отчёты и локальные данные
+reports/
+*.log
