@@ -31,6 +31,7 @@ uv run pytest -m "not e2e"     # без скриншотов
 ```
 
 Политика тестирования, золотые скриншоты и проверка UI зрением — см. [docs/TESTING.md](docs/TESTING.md).
+Методичка диагностики для человека — см. [docs/MANUAL.md](docs/MANUAL.md).
 
 ## Запуск
 
