@@ -3,6 +3,7 @@
 import json
 
 from diagninten98 import strings
+from diagninten98.knowledge.symptoms import GROUPS
 from diagninten98.report import build_report
 from diagninten98.strings import tr
 from diagninten98.usb.ids import UsbDeviceInfo
