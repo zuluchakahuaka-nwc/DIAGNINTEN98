@@ -50,6 +50,22 @@ C = {
         "battery_deep",
         ("Батарея: глубокий разряд / BMS", "Battery: deep discharge / BMS", "电池：深度放电 / BMS"),
     ),
+    "battery_connector": Cause(
+        "battery_connector",
+        ("Разъём батареи: неплотный контакт (после вскрытий)", "Battery connector: poor contact (after openings)", "电池连接器：接触不良（多次拆机后）"),
+    ),
+    "modchip_wires": Cause(
+        "modchip_wires",
+        ("Модчип: провода/пайка — трещины, отвалы", "Modchip: wires/solder — cracks, cold joints", "改装芯片：接线/焊点——开裂、虚焊"),
+    ),
+    "modchip_dat0": Cause(
+        "modchip_dat0",
+        ("Модчип: цепь DAT0/CLK eMMC (обрыв/КЗ)", "Modchip: eMMC DAT0/CLK line (break/short)", "改装芯片：eMMC DAT0/CLK 线路（断路/短路）"),
+    ),
+    "shield_pinch": Cause(
+        "shield_pinch",
+        ("Провод зажат экраном/корпусом/винтом", "Wire pinched by shield/case/screw", "线材被屏蔽罩/外壳/螺丝夹住"),
+    ),
     "pmic": Cause(
         "pmic",
         ("PMIC MAX77620 / цепи питания SoC", "PMIC MAX77620 / SoC power rails", "电源管理 MAX77620 / SoC 供电电路"),
@@ -161,7 +177,7 @@ GROUPS: tuple[SymptomGroup, ...] = (
                     "Completely dead (no response, no LED)",
                     "完全无法开机（无反应、无指示灯）",
                 ),
-                _c("usb_port_mech", "m92t36", "bq24193", "battery_deep", "pmic"),
+                _c("usb_port_mech", "m92t36", "bq24193", "battery_connector", "battery_deep", "pmic"),
             ),
             Symptom(
                 "black_no_backlight",
@@ -273,6 +289,30 @@ GROUPS: tuple[SymptomGroup, ...] = (
                     "过热 / 降频 / 风扇噪音大",
                 ),
                 _c("thermal_paste", "fan", "radiator"),
+            ),
+        ),
+    ),
+    SymptomGroup(
+        "modchip",
+        ("Модчип (PicoFly/HWFly и др.)", "Modchip (PicoFly/HWFly etc.)", "改装芯片（PicoFly/HWFly 等）"),
+        (
+            Symptom(
+                "error_blink",
+                (
+                    "Консоль не грузится, модчип мигает кодом ошибки",
+                    "Console won't boot, modchip blinks an error code",
+                    "主机无法启动，改装芯片闪烁错误代码",
+                ),
+                _c("modchip_wires", "modchip_dat0", "shield_pinch"),
+            ),
+            Symptom(
+                "intermittent_after_repair",
+                (
+                    "После разборки работает через раз / сам выключается",
+                    "Works intermittently after reassembly / shuts off by itself",
+                    "重新组装后时好时坏 / 自动关机",
+                ),
+                _c("battery_connector", "modchip_wires", "shield_pinch", "display_cable"),
             ),
         ),
     ),

@@ -174,6 +174,7 @@ def test_rcm_payload_no_file(qtbot):
 def test_faults_default_selection(qtbot):
     tab = FaultsTab()
     qtbot.addWidget(tab)
+    assert tab._groups_list.count() == len(GROUPS)  # все группы в списке
     assert tab.selected_group_id() == "power"
     assert tab.selected_symptom_id() == "dead"
     assert tab._causes_list.count() >= 3

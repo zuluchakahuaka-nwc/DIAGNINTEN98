@@ -5,7 +5,7 @@ from diagninten98.strings import LANGS
 
 
 def test_groups_exist():
-    assert len(GROUPS) >= 5
+    assert len(GROUPS) >= 6
 
 
 def test_unique_ids():
