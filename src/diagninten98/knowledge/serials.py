@@ -19,8 +19,11 @@ _REGION_PREFIXES: dict[str, str] = {
     "XAW": "serial_region_us",  # erista, Америка
     "XAJ": "serial_region_jp",  # erista, Япония
     "XEW": "serial_region_eu",  # erista, Европа — префикс под вопросом
+    "XKE": "serial_region_eu",  # mariko (V2), Европа — черновик, сверить
     "XKW": "serial_region_us",  # mariko, Америка — под вопросом
     "XKJ": "serial_region_jp",  # mariko, Япония — под вопросом
+    # XJE… — префикс Switch Lite (HDH-001, Европа?) — распознать регион по
+    # модели/наклейке; внесён в docs/FACTS_TO_VERIFY (№9).
 }
 
 # Вторая буква → поколение.

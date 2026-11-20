@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import __version__
 from . import strings
+from .profile import model_label, profile_from_dict, profile_label
 from .strings import tr
 from .usb.ids import format_vidpid
 
@@ -40,9 +41,11 @@ def render_txt(report: dict) -> str:
         lines: list[str] = [
             f"{tr('rep_title')} — DIAGNINTEN98 v{report['tool']['version']}",
             f"{report['generated_at']}",
-            "",
-            f"== {tr('rep_sec_usb')} ==",
         ]
+        prof = profile_from_dict(report["rcm"].get("profile"))
+        lines.append(f"  {tr('profile_title')}: {profile_label(prof)}")
+        lines.append(f"  {tr('profile_model_label')}: {model_label(prof)}")
+        lines += ["", f"== {tr('rep_sec_usb')} =="]
         devices = report["usb"].get("devices", [])
         if devices:
             for d in devices:

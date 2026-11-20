@@ -4,6 +4,7 @@ import json
 
 from diagninten98 import strings
 from diagninten98.knowledge.symptoms import GROUPS
+from diagninten98.profile import VARIANT_MODCHIP, VARIANT_STOCK, ConsoleProfile
 from diagninten98.report import build_report
 from diagninten98.strings import tr
 from diagninten98.usb.ids import UsbDeviceInfo
@@ -189,7 +190,8 @@ def test_faults_switch_symptom(qtbot):
     qtbot.addWidget(tab)
     tab._symptoms_list.setCurrentRow(1)  # black_no_backlight
     assert tab.selected_symptom_id() == "black_no_backlight"
-    assert tab._causes_list.count() == 3
+    # 3 базовых причины + 3 модчиповых (для варианта А — в конце списка)
+    assert tab._causes_list.count() == 6
 
 
 def test_faults_retranslate_zh(monkeypatch, qtbot):
@@ -201,6 +203,79 @@ def test_faults_retranslate_zh(monkeypatch, qtbot):
     assert tab.selected_group_id() == "power"  # выбор сохранён
     assert "USB-C" in tab._causes_list.item(0).text()
     assert "M92T36" in tab._causes_list.item(1).text()
+
+
+# --- профиль консоли ---
+
+
+def test_rcm_profile_default_stock(qtbot):
+    tab = RcmTab(enumerate_fn=lambda: [], driver_poll_ms=0)
+    qtbot.addWidget(tab)
+    assert tab.profile() == ConsoleProfile()
+    assert not tab._chip_combo.isEnabled()  # тип чипа неактивен для варианта А
+
+
+def test_rcm_profile_switch_to_modchip(qtbot):
+    tab = RcmTab(enumerate_fn=lambda: [], driver_poll_ms=0)
+    qtbot.addWidget(tab)
+    tab._variant_combo.setCurrentIndex(1)  # вариант Б
+    tab._chip_combo.setCurrentIndex(0)  # PicoFly
+    tab._model_combo.setCurrentIndex(3)  # Switch Lite
+    prof = tab.profile()
+    assert prof.variant == VARIANT_MODCHIP
+    assert prof.chip == "picofly"
+    assert prof.model == "lite"
+    assert prof.is_mariko
+    assert tab._chip_combo.isEnabled()
+    snap = tab.snapshot()
+    assert snap["profile"] == {"variant": "modchip", "chip": "picofly", "model": "lite"}
+
+
+def test_rcm_profile_signal(qtbot):
+    tab = RcmTab(enumerate_fn=lambda: [], driver_poll_ms=0)
+    qtbot.addWidget(tab)
+    received = []
+    tab.profile_changed.connect(lambda p: received.append(p))
+    tab._variant_combo.setCurrentIndex(1)
+    assert len(received) == 1
+    assert received[0].variant == VARIANT_MODCHIP
+    # возврат к А — чип сбрасывается
+    tab._variant_combo.setCurrentIndex(0)
+    assert received[-1].chip is None
+
+
+def test_faults_modchip_profile_ranks_modchip_first(qtbot):
+    mod = ConsoleProfile(variant=VARIANT_MODCHIP, chip="picofly", model="lite")
+    tab = FaultsTab(profile=mod)
+    qtbot.addWidget(tab)
+    assert tab.selected_group_id() == "modchip"  # группа модчипа — первая
+    assert "SD" in tab._causes_list.item(0).text()  # нет SD — причина №1
+    # возврат к А: стандартный порядок
+    tab.set_profile(ConsoleProfile(variant=VARIANT_STOCK))
+    assert tab.selected_group_id() == "power"
+
+
+def test_faults_modchip_causes_promoted_in_power_group(qtbot):
+    mod = ConsoleProfile(variant=VARIANT_MODCHIP)
+    tab = FaultsTab(profile=mod)
+    qtbot.addWidget(tab)
+    tab._groups_list.setCurrentRow(1)  # «Питание» — вторая группа при профиле Б
+    tab._symptoms_list.setCurrentRow(0)  # «совсем не включается»
+    first_cause = tab._causes_list.item(0).text()
+    assert "модчип" in first_cause.lower()  # провода чипа — причина №1 при Б
+
+
+def test_monitor_rcm_headline_modchip_profile(qtbot):
+    tab = UsbMonitorTab(enumerate_fn=_fake_rcm_device, poll_ms=0)
+    qtbot.addWidget(tab)
+    tab.set_profile_provider(
+        lambda: ConsoleProfile(variant=VARIANT_MODCHIP, chip="picofly")
+    )
+    tab.refresh()
+    assert tab._status_label.text() == tr("mon_rcm_modchip")
+    tab.set_profile_provider(lambda: ConsoleProfile())  # вариант А — обычный текст
+    tab.refresh()
+    assert tab._status_label.text() == tr("mon_rcm")
 
 
 # --- Отчёт ---

@@ -5,7 +5,19 @@ from diagninten98.strings import LANGS
 
 # Ключи, где переводы закономерно совпадают во всех языках
 # (аббревиатуры и технические обозначения).
-SAME_IN_ALL = {"rcm_tab", "mon_vidpid", "mon_kind_rcm", "mon_kind_other", "rep_sec_rcm"}
+SAME_IN_ALL = {
+    "rcm_tab",
+    "mon_vidpid",
+    "mon_kind_rcm",
+    "mon_kind_other",
+    "rep_sec_rcm",
+    "chip_picofly",
+    "chip_hwfly",
+    "model_standard_v1",
+    "model_standard_v2",
+    "model_lite",
+    "model_oled",
+}
 
 
 def test_strings_cover_all_languages():

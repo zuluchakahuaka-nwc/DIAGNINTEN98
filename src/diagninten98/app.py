@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 
 from . import __version__, report as report_mod
 from . import strings
+from .profile import ConsoleProfile, profile_from_dict
 from .strings import LANG_NAMES, LANGS, tr
 from .views import FaultsTab, RcmTab, ReportTab, UsbMonitorTab
 
@@ -61,11 +62,16 @@ class MainWindow(QMainWindow):
         root.addLayout(top)
 
         # Вкладки.
+        profile = self._load_profile()
         self.usb_tab = UsbMonitorTab(enumerate_fn=usb_enumerate_fn, poll_ms=usb_poll_ms)
         self.rcm_tab = RcmTab(
-            enumerate_fn=rcm_enumerate_fn, driver_poll_ms=rcm_driver_poll_ms
+            enumerate_fn=rcm_enumerate_fn,
+            driver_poll_ms=rcm_driver_poll_ms,
+            initial_profile=profile,
         )
-        self.faults_tab = FaultsTab()
+        self.usb_tab.set_profile_provider(self.rcm_tab.profile)
+        self.rcm_tab.profile_changed.connect(self._on_profile_changed)
+        self.faults_tab = FaultsTab(profile=profile)
         self.codes_tab = self._make_stub_page("codes_tab", "phase3_stub")
         self.report_tab = ReportTab(default_dir=report_dir)
         self.report_tab.set_provider(self._build_report)
@@ -105,6 +111,20 @@ class MainWindow(QMainWindow):
             self.rcm_tab.snapshot(),
             self.faults_tab.snapshot(),
         )
+
+    def _load_profile(self) -> ConsoleProfile:
+        return profile_from_dict({
+            "variant": self._settings.value("profile_variant", "stock"),
+            "chip": self._settings.value("profile_chip", ""),
+            "model": self._settings.value("profile_model", "unknown"),
+        })
+
+    def _on_profile_changed(self, profile: ConsoleProfile) -> None:
+        self._settings.setValue("profile_variant", profile.variant)
+        self._settings.setValue("profile_chip", profile.chip or "")
+        self._settings.setValue("profile_model", profile.model)
+        self.faults_tab.set_profile(profile)
+        self.usb_tab.refresh()  # сразу применить новую трактовку RCM-статуса
 
     def _on_language_changed(self, index: int) -> None:
         code = self._lang_combo.itemData(index)

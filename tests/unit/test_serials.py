@@ -32,6 +32,21 @@ def test_unknown_prefix_still_ok():
     assert info.region_key == "serial_region_unknown"
 
 
+def test_xke_mariko_europe():
+    """XKE — Европа, эра mariko (V2): вторая буква K."""
+    info = check("XKE10001234567")
+    assert info.ok
+    assert info.region_key == "serial_region_eu"
+    assert info.generation_key == "serial_gen_mariko"
+
+
+def test_xje_lite_unknown_generation():
+    """XJE — префикс Switch Lite (HDH-001); поколение по второй букве неизвестно."""
+    info = check("XJE10013236891")
+    assert info.ok
+    assert info.generation_key == "serial_gen_unknown"
+
+
 def test_describe_bad_format_localized(monkeypatch):
     monkeypatch.setattr(strings, "LANG", "ru")
     info = check("nope")

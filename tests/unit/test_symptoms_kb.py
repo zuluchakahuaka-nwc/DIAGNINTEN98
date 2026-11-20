@@ -38,3 +38,12 @@ def test_finders():
 def test_symptom_has_prioritized_causes():
     dead = find_symptom("power", "dead")
     assert [c.id for c in dead.causes][:2] == ["usb_port_mech", "m92t36"]
+
+
+def test_modchip_causes_present_in_regular_symptoms():
+    """Модчиповые причины есть и в обычных симптомах (ранжируются по профилю)."""
+    dead = find_symptom("power", "dead")
+    ids = {c.id for c in dead.causes}
+    assert {"modchip_wires", "modchip_dat0"} <= ids
+    black = find_symptom("power", "black_no_backlight")
+    assert "modchip_no_sd" in {c.id for c in black.causes}

@@ -1,8 +1,9 @@
 """Вкладка «USB / Монитор»: перечисление устройств, статус консоли.
 
-Перечисление через SetupAPI (usb.enumerate_win) — работает до установки
-драйвера, поэтому APX/RCM виден сразу. Опрос по QTimer (интервал настраивается,
-0/None — только вручную; используется в тестах).
+Перечисление через SetupAPI-замену cfgmgr32 (usb.enumerate_win) — работает до
+установки драйвера, поэтому APX/RCM виден сразу. Опрос по QTimer (интервал
+настраивается, 0/None — только вручную; используется в тестах).
+Статус RCM учитывает профиль: для варианта Б RCM может быть принудительным.
 """
 
 from __future__ import annotations
@@ -19,7 +20,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .. import strings
 from ..strings import tr, tr_fmt
 from ..usb import enumerate_win
 from ..usb.ids import (
@@ -47,6 +47,7 @@ class UsbMonitorTab(QWidget):
         self._enumerate = enumerate_fn or enumerate_win.list_usb_devices
         self._devices: list[UsbDeviceInfo] = []
         self._enum_error: str | None = None
+        self._profile_provider = None  # callable() -> ConsoleProfile
 
         self._status_label = QLabel()
         self._status_label.setWordWrap(True)
@@ -84,6 +85,10 @@ class UsbMonitorTab(QWidget):
 
     # --- данные ---
 
+    def set_profile_provider(self, provider) -> None:
+        """provider() -> ConsoleProfile: влияет на трактовку RCM-статуса."""
+        self._profile_provider = provider
+
     def refresh(self) -> None:
         """Перечислить устройства и перерисовать таблицу/статус."""
         self._enum_error = None
@@ -96,6 +101,7 @@ class UsbMonitorTab(QWidget):
 
     def snapshot(self) -> dict:
         """Снимок состояния для отчёта (чистые данные)."""
+        dominant = dominant_kind(self._devices)
         devices = [
             {
                 "vid": d.vendor_id,
@@ -105,7 +111,11 @@ class UsbMonitorTab(QWidget):
             }
             for d in self._devices
         ]
-        status = "error" if self._enum_error else (dominant_kind(self._devices).name.lower() if dominant_kind(self._devices) else "none")
+        status = (
+            "error"
+            if self._enum_error
+            else (dominant.name.lower() if dominant else "none")
+        )
         return {"devices": devices, "status": status, "error": self._enum_error}
 
     # --- отображение ---
@@ -118,11 +128,22 @@ class UsbMonitorTab(QWidget):
         )
         self._render()
 
+    def _headline(self) -> str:
+        key = headline_key(self._devices)
+        if key == "mon_rcm":
+            try:
+                profile = self._profile_provider() if self._profile_provider else None
+            except Exception:  # noqa: BLE001 — профиль не должен ломать монитор
+                profile = None
+            if profile is not None and profile.is_modchip:
+                return tr("mon_rcm_modchip")
+        return tr(key)
+
     def _render(self) -> None:
         if self._enum_error:
             self._status_label.setText(tr_fmt("mon_enum_error", err=self._enum_error))
         else:
-            self._status_label.setText(tr(headline_key(self._devices)))
+            self._status_label.setText(self._headline())
 
         self._table.setRowCount(len(self._devices))
         for row, dev in enumerate(self._devices):

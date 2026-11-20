@@ -162,6 +162,43 @@ STRINGS: dict[str, tuple[str, str, str]] = {
         "Send error: {err}",
         "发送出错：{err}",
     ),
+    # --- профиль консоли (вариант А/Б) ---
+    "profile_title": ("Профиль консоли", "Console profile", "主机档案"),
+    "profile_variant_a": (
+        "А — обычная (без модчипа)",
+        "A — stock (no modchip)",
+        "A——原装（无改装芯片）",
+    ),
+    "profile_variant_b": (
+        "Б — с глитч-модчипом",
+        "B — with glitch modchip",
+        "B——带破解（glitch）芯片",
+    ),
+    "profile_chip_label": ("Тип чипа", "Chip type", "芯片型号"),
+    "profile_model_label": ("Модель консоли", "Console model", "主机型号"),
+    "model_unknown": ("Неизвестно", "Unknown", "未知"),
+    "model_standard_v1": ("Switch V1 (HAC-001)", "Switch V1 (HAC-001)", "Switch V1（HAC-001）"),
+    "model_standard_v2": (
+        "Switch V2 (HAC-001(-01))",
+        "Switch V2 (HAC-001(-01))",
+        "Switch V2（HAC-001(-01)）",
+    ),
+    "model_lite": ("Switch Lite (HDH-001)", "Switch Lite (HDH-001)", "Switch Lite（HDH-001）"),
+    "model_oled": ("Switch OLED (HEG-001)", "Switch OLED (HEG-001)", "Switch OLED（HEG-001）"),
+    "chip_picofly": ("PicoFly (RP2040)", "PicoFly (RP2040)", "PicoFly（RP2040）"),
+    "chip_hwfly": ("HWFly / Spacecraft", "HWFly / Spacecraft", "HWFly / Spacecraft"),
+    "chip_other": ("Другой / не знаю", "Other / unknown", "其他 / 不确定"),
+    "mon_rcm_modchip": (
+        "Обнаружена консоль в RCM (APX). Профиль Б: RCM может быть ПРИНУДИТЕЛЬНЫМ "
+        "— глитч-чип заводит консоль в RCM при каждой загрузке; APST, мигающий в "
+        "мониторе, — это цикл глитча в реальном времени. SoC и boot ROM работают.",
+        "Console detected in RCM (APX). Profile B: RCM may be FORCED — the glitch "
+        "chip enters RCM at every boot; an APX blinking in the monitor is a live "
+        "glitch cycle. SoC and boot ROM are working.",
+        "检测到 RCM（APX）模式的主机。档案 B：RCM 可能是被强制进入的——破解芯片"
+        "在每次开机时都会使主机进入 RCM；监视器中 APX 闪烁即为实时 glitch 循环。"
+        "SoC 与 boot ROM 工作正常。",
+    ),
     # --- результаты проверки серийника ---
     "serial_region_us": ("регион: Америка", "region: Americas", "地区：美洲"),
     "serial_region_jp": ("регион: Япония", "region: Japan", "地区：日本"),

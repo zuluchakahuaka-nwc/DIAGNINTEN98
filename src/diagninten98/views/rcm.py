@@ -1,11 +1,12 @@
-"""Вкладка «RCM»: Device ID (чтение), драйвер APX, payload, серийник."""
+"""Вкладка «RCM»: профиль консоли, Device ID (чтение), драйвер APX, payload, серийник."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, Signal
 from PySide6.QtWidgets import (
+    QComboBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
@@ -19,14 +20,33 @@ from PySide6.QtWidgets import (
 
 from .. import strings
 from ..knowledge import serials
+from ..profile import (
+    CHIP_TYPES,
+    MODELS,
+    VARIANT_MODCHIP,
+    VARIANT_STOCK,
+    ConsoleProfile,
+)
 from ..strings import tr, tr_fmt
 from ..usb import enumerate_win
 from ..usb import payload as payload_mod
 from ..usb import rcm as rcm_mod
 from ..usb.ids import RCM_VID_PID, UsbDeviceInfo
 
+_CHIP_KEYS = {"picofly": "chip_picofly", "hwfly": "chip_hwfly", "other": "chip_other"}
+_VARIANT_KEYS = {VARIANT_STOCK: "profile_variant_a", VARIANT_MODCHIP: "profile_variant_b"}
+_MODEL_KEYS = {
+    "unknown": "model_unknown",
+    "standard_v1": "model_standard_v1",
+    "standard_v2": "model_standard_v2",
+    "lite": "model_lite",
+    "oled": "model_oled",
+}
+
 
 class RcmTab(QWidget):
+    profile_changed = Signal(object)  # ConsoleProfile
+
     def __init__(
         self,
         read_fn=None,
@@ -35,6 +55,7 @@ class RcmTab(QWidget):
         send_fn=None,
         confirm_fn=None,
         driver_poll_ms: int = 3000,
+        initial_profile: ConsoleProfile | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -52,6 +73,23 @@ class RcmTab(QWidget):
         self._read_error: str | None = None
         self._serial_result: str = ""
         self._payload_status: str = ""
+        self._profile = initial_profile or ConsoleProfile()
+
+        # Профиль консоли (вариант А/Б + чип + модель)
+        self._profile_box = QGroupBox()
+        profile_layout = QVBoxLayout(self._profile_box)
+        self._variant_combo = QComboBox()
+        self._chip_combo = QComboBox()
+        self._model_combo = QComboBox()
+        self._variant_combo.currentIndexChanged.connect(lambda _: self._on_profile())
+        self._chip_combo.currentIndexChanged.connect(lambda _: self._on_profile())
+        self._model_combo.currentIndexChanged.connect(lambda _: self._on_profile())
+        variant_row = QHBoxLayout()
+        variant_row.addWidget(self._variant_combo, 2)
+        variant_row.addWidget(self._chip_combo, 2)
+        variant_row.addWidget(self._model_combo, 2)
+        profile_layout.addLayout(variant_row)
+        self._fill_profile_combos()
 
         # Device ID
         self._id_box = QGroupBox()
@@ -111,6 +149,7 @@ class RcmTab(QWidget):
         serial_layout.addWidget(self._serial_result_label)
 
         layout = QVBoxLayout(self)
+        layout.addWidget(self._profile_box)
         layout.addWidget(self._id_box)
         layout.addWidget(self._driver_box)
         layout.addWidget(self._payload_box)
@@ -125,6 +164,39 @@ class RcmTab(QWidget):
 
         self.retranslate()
         self._refresh_driver_hint()
+
+    # --- профиль ---
+
+    def _fill_profile_combos(self) -> None:
+        """Наполнить комбобоксы профиля (ключи в userData), сохраняя выбор."""
+        def refill(combo, items, selected, tr_key):
+            combo.blockSignals(True)
+            combo.clear()
+            for key in items:
+                combo.addItem(strings.tr(tr_key(key)), key)
+            index = list(items).index(selected) if selected in items else 0
+            combo.setCurrentIndex(index)
+            combo.blockSignals(False)
+
+        refill(self._variant_combo, (VARIANT_STOCK, VARIANT_MODCHIP),
+               self._profile.variant, lambda k: _VARIANT_KEYS[k])
+        refill(self._chip_combo, CHIP_TYPES, self._profile.chip_or_default,
+               lambda k: _CHIP_KEYS[k])
+        refill(self._model_combo, MODELS, self._profile.model,
+               lambda k: _MODEL_KEYS[k])
+        self._chip_combo.setEnabled(self._profile.is_modchip)
+
+    def profile(self) -> ConsoleProfile:
+        """Текущий профиль из комбобоксов."""
+        variant = self._variant_combo.currentData() or VARIANT_STOCK
+        chip = self._chip_combo.currentData() if variant == VARIANT_MODCHIP else None
+        model = self._model_combo.currentData() or "unknown"
+        return ConsoleProfile(variant=str(variant), chip=chip, model=str(model))
+
+    def _on_profile(self) -> None:
+        self._profile = self.profile()
+        self._chip_combo.setEnabled(self._profile.is_modchip)
+        self.profile_changed.emit(self._profile)
 
     # --- действия ---
 
@@ -204,6 +276,7 @@ class RcmTab(QWidget):
 
     def snapshot(self) -> dict:
         return {
+            "profile": self.profile().as_dict(),
             "device_id": self._device_id,
             "read_error": self._read_error,
             "serial": self._serial_edit.text().strip().upper(),
@@ -215,6 +288,8 @@ class RcmTab(QWidget):
     # --- отображение ---
 
     def retranslate(self) -> None:
+        self._profile_box.setTitle(tr("profile_title"))
+        self._fill_profile_combos()
         self._id_box.setTitle(tr("rcm_id_title"))
         self._read_btn.setText(tr("rcm_read_btn"))
         self._driver_box.setTitle(tr("rcm_driver_title"))

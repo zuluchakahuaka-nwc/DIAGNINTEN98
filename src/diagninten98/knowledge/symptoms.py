@@ -54,6 +54,22 @@ C = {
         "battery_connector",
         ("Разъём батареи: неплотный контакт (после вскрытий)", "Battery connector: poor contact (after openings)", "电池连接器：接触不良（多次拆机后）"),
     ),
+    "modchip_no_sd": Cause(
+        "modchip_no_sd",
+        (
+            "Модчип без SD-карты: payload не найден (чёрный экран, цикл ошибки)",
+            "Modchip without SD card: payload not found (black screen, error loop)",
+            "改装芯片无 SD 卡：找不到 payload（黑屏、错误循环）",
+        ),
+    ),
+    "stick_solder_repair": Cause(
+        "stick_solder_repair",
+        (
+            "Ремонт стика на Lite: пайка на плате (перегрев/флюс/соседние цепи)",
+            "Lite stick repair: board soldering (heat/flux/nearby traces)",
+            "Lite 摇杆维修：主板焊接（过热/助焊剂/邻近线路）",
+        ),
+    ),
     "modchip_wires": Cause(
         "modchip_wires",
         ("Модчип: провода/пайка — трещины, отвалы", "Modchip: wires/solder — cracks, cold joints", "改装芯片：接线/焊点——开裂、虚焊"),
@@ -177,7 +193,7 @@ GROUPS: tuple[SymptomGroup, ...] = (
                     "Completely dead (no response, no LED)",
                     "完全无法开机（无反应、无指示灯）",
                 ),
-                _c("usb_port_mech", "m92t36", "bq24193", "battery_connector", "battery_deep", "pmic"),
+                _c("usb_port_mech", "m92t36", "bq24193", "battery_connector", "battery_deep", "pmic", "modchip_wires", "modchip_dat0"),
             ),
             Symptom(
                 "black_no_backlight",
@@ -186,7 +202,7 @@ GROUPS: tuple[SymptomGroup, ...] = (
                     "Black screen, no backlight",
                     "黑屏且无背光",
                 ),
-                _c("display_cable", "panel_backlight", "board_damage"),
+                _c("display_cable", "panel_backlight", "board_damage", "modchip_no_sd", "modchip_wires", "modchip_dat0"),
             ),
             Symptom(
                 "backlight_no_image",
@@ -303,7 +319,7 @@ GROUPS: tuple[SymptomGroup, ...] = (
                     "Console won't boot, modchip blinks an error code",
                     "主机无法启动，改装芯片闪烁错误代码",
                 ),
-                _c("modchip_wires", "modchip_dat0", "shield_pinch"),
+                _c("modchip_no_sd", "modchip_wires", "modchip_dat0", "shield_pinch"),
             ),
             Symptom(
                 "intermittent_after_repair",
@@ -312,7 +328,7 @@ GROUPS: tuple[SymptomGroup, ...] = (
                     "Works intermittently after reassembly / shuts off by itself",
                     "重新组装后时好时坏 / 自动关机",
                 ),
-                _c("battery_connector", "modchip_wires", "shield_pinch", "display_cable"),
+                _c("battery_connector", "modchip_wires", "stick_solder_repair", "shield_pinch", "display_cable"),
             ),
         ),
     ),
@@ -328,3 +344,27 @@ def find_symptom(group_id: str, symptom_id: str) -> Symptom | None:
     if group is None:
         return None
     return next((s for s in group.symptoms if s.id == symptom_id), None)
+
+
+# --- ранжирование по профилю консоли (см. diagninten98.profile) ---
+
+MODCHIP_GROUP_ID = "modchip"
+MODCHIP_CAUSE_IDS = frozenset({"modchip_wires", "modchip_dat0", "modchip_no_sd"})
+
+
+def ordered_groups(profile) -> tuple[SymptomGroup, ...]:
+    """Порядок групп под профиль: для варианта Б модчип — первый подозреваемый."""
+    if getattr(profile, "is_modchip", False):
+        chip = [g for g in GROUPS if g.id == MODCHIP_GROUP_ID]
+        rest = [g for g in GROUPS if g.id != MODCHIP_GROUP_ID]
+        return tuple(chip + rest)
+    return GROUPS
+
+
+def ordered_causes(symptom: Symptom, profile) -> tuple[Cause, ...]:
+    """Причины под профиль: для варианта Б модчиповые причины — в топ (стабильно)."""
+    if not getattr(profile, "is_modchip", False):
+        return symptom.causes
+    promoted = [c for c in symptom.causes if c.id in MODCHIP_CAUSE_IDS]
+    rest = [c for c in symptom.causes if c.id not in MODCHIP_CAUSE_IDS]
+    return tuple(promoted + rest)
