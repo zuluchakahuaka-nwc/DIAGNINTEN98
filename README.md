@@ -23,6 +23,15 @@ DIAGNINTEN98/
 └── pyproject.toml
 ```
 
+## Тесты
+
+```
+uv run pytest                  # компонентные + GUI + e2e со скриншотами
+uv run pytest -m "not e2e"     # без скриншотов
+```
+
+Политика тестирования, золотые скриншоты и проверка UI зрением — см. [docs/TESTING.md](docs/TESTING.md).
+
 ## Запуск (после реализации фазы 1)
 
 ```
