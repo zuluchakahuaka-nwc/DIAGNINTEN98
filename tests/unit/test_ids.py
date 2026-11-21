@@ -17,6 +17,8 @@ def dev(vid: int, pid: int) -> UsbDeviceInfo:
 def test_classify_known():
     assert classify(0x0955, 0x7321) is DeviceKind.RCM
     assert classify(0x057E, 0x2010) is DeviceKind.MTP
+    # DBI (хомбрю-установщик) в MTP-режиме — подтверждено живой консолью
+    assert classify(0x057E, 0x201D) is DeviceKind.MTP_DBI
 
 
 def test_classify_other():
@@ -43,3 +45,13 @@ def test_dominant_kind():
     assert dominant_kind([dev(0x0955, 0x7321)]) is DeviceKind.RCM
     assert dominant_kind([dev(0x1111, 0x2222)]) is None
     assert dominant_kind([]) is None
+
+
+def test_dbi_counts_as_booted_system():
+    """DBI в MTP-режиме = система полностью загружена (статус mon_mtp)."""
+    dbi = [dev(0x057E, 0x201D)]
+    assert headline_key(dbi) == "mon_mtp"
+    assert dominant_kind(dbi) is DeviceKind.MTP_DBI
+    # RCM приоритетнее, даже если рядом DBI
+    mixed = [dev(0x057E, 0x201D), dev(0x0955, 0x7321)]
+    assert headline_key(mixed) == "mon_rcm"

@@ -28,6 +28,7 @@ STRINGS: dict[str, tuple[str, str, str]] = {
     "mon_kind": ("Режим", "Mode", "模式"),
     "mon_kind_rcm": ("RCM (APX)", "RCM (APX)", "RCM (APX)"),
     "mon_kind_mtp": ("MTP (система)", "MTP (system)", "MTP（系统）"),
+    "mon_kind_mtp_dbi": ("MTP (DBI/хомбрю)", "MTP (DBI/homebrew)", "MTP（DBI/自制软件）"),
     "mon_kind_other": ("—", "—", "—"),
     "mon_none": (
         "Консоль не обнаружена. Подключите Switch по USB (любой режим) или введите "

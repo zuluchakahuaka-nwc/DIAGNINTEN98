@@ -13,7 +13,8 @@ from enum import Enum, auto
 
 class DeviceKind(Enum):
     RCM = auto()  # APX: boot ROM, jig + Vol+ + Power
-    MTP = auto()  # полностью загруженная система
+    MTP = auto()  # полностью загруженная система (официальный MTP)
+    MTP_DBI = auto()  # загруженная система + DBI/хомбрю в MTP-режиме
     OTHER = auto()
 
 
@@ -28,11 +29,15 @@ class UsbDeviceInfo:
 
 RCM_VID_PID = (0x0955, 0x7321)
 MTP_VID_PID = (0x057E, 0x2010)
+# DBI (DB Installer, хомбрю) в MTP-режиме — подтверждено живой консолью
+# 2026-11-21: name "Switch", service WUDFWpdMtp.
+DBI_MTP_VID_PID = (0x057E, 0x201D)
 
 # kind → ключ локализации названия режима
 KIND_KEYS: dict[DeviceKind, str] = {
     DeviceKind.RCM: "mon_kind_rcm",
     DeviceKind.MTP: "mon_kind_mtp",
+    DeviceKind.MTP_DBI: "mon_kind_mtp_dbi",
     DeviceKind.OTHER: "mon_kind_other",
 }
 
@@ -42,6 +47,8 @@ def classify(vid: int, pid: int) -> DeviceKind:
         return DeviceKind.RCM
     if (vid, pid) == MTP_VID_PID:
         return DeviceKind.MTP
+    if (vid, pid) == DBI_MTP_VID_PID:
+        return DeviceKind.MTP_DBI
     return DeviceKind.OTHER
 
 
@@ -54,7 +61,7 @@ def headline_key(devices: list[UsbDeviceInfo]) -> str:
     kinds = {classify(d.vendor_id, d.product_id) for d in devices}
     if DeviceKind.RCM in kinds:
         return "mon_rcm"
-    if DeviceKind.MTP in kinds:
+    if DeviceKind.MTP in kinds or DeviceKind.MTP_DBI in kinds:
         return "mon_mtp"
     return "mon_none"
 
@@ -66,4 +73,6 @@ def dominant_kind(devices: list[UsbDeviceInfo]) -> DeviceKind | None:
         return DeviceKind.RCM
     if DeviceKind.MTP in kinds:
         return DeviceKind.MTP
+    if DeviceKind.MTP_DBI in kinds:
+        return DeviceKind.MTP_DBI
     return None

@@ -7,7 +7,7 @@
 |---|---|---|---|
 | 1 | ✅ RCM-режим: USB VID `0955` (NVIDIA), PID `7321` — подтверждено по исходнику fusee-launcher (Smeat/fusee-launcher, 2026-11-20): `DEFAULT_VID/PID` | детект консоли в RCM | проверено |
 | 2 | ✅ Device ID читается bulk-read 16 байт с endpoint `0x81`, таймаут 1 c (НЕ контрольный трансфер) — подтверждено fusee-launcher: `read_device_id() -> self.read(16)` | вкладка RCM | проверено |
-| 3 | Обычный режим: MTP VID `057E` (Nintendo), PID `2010` | USB-монитор: «система грузится» | switchbrew |
+| 3 | ✅ Обычный режим: MTP VID `057E` (Nintendo), PID `2010`. Живой консолью (2026-11-21) подтверждён вариант **DBI (хомбрю-установщик): `057E:201D`**, name «Switch», service `WUDFWpdMtp` — классифицируется как «система загружена» | USB-монитор | проверено |
 | 4 | Mariko (T214) в RCM даёт тот же PID, но fusée gelée закрыта | определение ревизии | fusee-launcher, switchbrew |
 | 5 | Зарядный IC — TI BQ24193; fuel gauge — MAX17050 | база знаний «не заряжается» | switchbrew, схемы ремонта |
 | 6 | PD-контроллер — M92T36 (частый виновник «не заряжается») | база знаний | ремонтные форумы |
